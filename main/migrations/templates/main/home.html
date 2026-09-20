@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elimu Platform - Home</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: auto; }
+        header { text-align: center; background: #0056b3; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 5px; }
+        .btn { background: #28a745; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .btn:hover { background: #218838; }
+        form input { display: block; width: 95%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+        form button { background: #0056b3; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        .alert { padding: 10px; background-color: #d4edda; color: #155724; border-radius: 5px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Karibu Elimu Platform</h1>
+            <p>Jifunze na pakua study materials kwa urahisi</p>
+        </header>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- SEHEMU YA FOUNDER -->
+        <div class="card">
+            <h2>Taarifa za Founder</h2>
+            {% for founder in founders %}
+                <h3>{{ founder.name }}</h3>
+                <p><strong>Bio:</strong> {{ founder.bio }}</p>
+            {% empty %}
+                <p>Taarifa za founder bado hazijawekwa.</p>
+            {% endfor %}
+        </div>
+
+        <!-- SEHEMU YA NOTISI / PDFs -->
+        <div class="card">
+            <h2>Notisi na Study Materials</h2>
+            <ul>
+                {% for notice in notices %}
+                    <li style="margin-bottom: 15px;">
+                        <strong>{{ notice.title }}</strong> (Aina: {{ notice.category }}) <br>
+                        <small>Iliwekwa: {{ notice.uploaded_at|date:"d M Y" }}</small><br><br>
+                        {% if notice.pdf_file %}
+                            <a href="{{ notice.pdf_file.url }}" class="btn" target="_blank">Pakua / Angalia PDF</a>
+                        {% endif %}
+                    </li>
+                {% empty %}
+                    <li>Bado hakuna notisi zilizowekwa.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- SEHEMU YA USERS KUJISAJILI -->
+        <div class="card">
+            <h2>Jisajili Kama Mwanafunzi / Mtumiaji Mpya</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="text" name="username" placeholder="Jina la Mtumiaji (Username)" required>
+                <input type="email" name="email" placeholder="Barua Pepe (Email)" required>
+                <input type="text" name="phone" placeholder="Namba ya Simu" required>
+                <input type="password" name="password" placeholder="Nenosiri (Password)" required>
+                <button type="submit">Tengeneza Akaunti</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
