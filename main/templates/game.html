@@ -1,397 +1,447 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="sw">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Jet Fighter - Elimu Platform</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aviator Jet Fighter Game</title>
     <style>
-        body {
-            touch-action: manipulation;
+        * {
+            box-sizing: border-box;
             user-select: none;
             -webkit-user-select: none;
-            background-color: #0f172a;
-            color: #f8fafc;
-            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
         }
-        #gameCanvas {
-            background: linear-gradient(to bottom, #020617, #0f172a);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+        body {
+            background-color: #0d1117;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
             touch-action: none;
         }
-.touch-btn:active {
-    transform: scale(0.95);
-}
-.touch-btn {
-    transition: transform 0.05s ease;
-    touch-action: none;
-}
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            height: 90vh;
+            max-height: 800px;
+            background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            overflow: hidden;
+            border: 2px solid #30363d;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        }
+        /* Touch Controls */
+        #touch-controls {
+            position: absolute;
+            bottom: 15px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 10;
+        }
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(2, 50px);
+            gap: 5px;
+        }
+        .touch-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 10px;
+            color: white;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            touch-action: none;
+        }
+        .touch-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.4);
+        }
+        #fire-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(231, 76, 60, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            font-weight: bold;
+            font-size: 16px;
+            align-self: flex-end;
+        }
+        /* Game Over Screen */
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            display: none;
+        }
+        #game-over h1 {
+            color: #e74c3c;
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        #restart-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-6 overflow-x-hidden">
+<body>
 
-    <!-- Header -->
-    <header class="w-full max-w-2xl text-center my-2">
-        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-blue-400">✈️ JET FIGHTER</h1>
-        <p class="text-xs md:text-sm text-slate-400">Elimu Platform Special Edition</p>
-    </header>
+<div id="game-container">
+    <div id="ui-layer">
+        <div>SCORE: <span id="score">0</span></div>
+        <div>HP: <span id="hp">100</span>%</div>
+    </div>
 
-    <!-- Canvas Wrapper -->
-    <main class="w-full max-w-2xl flex flex-col items-center justify-center relative flex-grow">
-        <canvas id="gameCanvas" class="w-full rounded-xl border border-slate-700 max-h-[60vh] object-contain"></canvas>
-    </main>
+    <canvas id="gameCanvas"></canvas>
 
-    <!-- On-Screen Mobile Touch Controls -->
-    <footer id="mobile-controls" class="w-full max-w-md my-3 px-2 grid grid-cols-3 gap-2 items-center">
-        <!-- Directional D-Pad Left Side -->
-        <div class="col-span-2 grid grid-cols-3 gap-1.5 text-center">
+    <div id="touch-controls">
+        <div class="dpad">
             <div></div>
-            <button id="btnUp" class="touch-btn bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-lg border border-slate-600 shadow-lg text-lg">⬆️</button>
+            <div class="touch-btn" id="btn-up">▲</div>
             <div></div>
-            <button id="btnLeft" class="touch-btn bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-lg border border-slate-600 shadow-lg text-lg">⬅️</button>
-            <button id="btnDown" class="touch-btn bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-lg border border-slate-600 shadow-lg text-lg">⬇️</button>
-            <button id="btnRight" class="touch-btn bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-lg border border-slate-600 shadow-lg text-lg">➡️</button>
+            <div class="touch-btn" id="btn-left">◀</div>
+            <div class="touch-btn" id="btn-down">▼</div>
+            <div class="touch-btn" id="btn-right">▶</div>
         </div>
+        <div class="touch-btn" id="fire-btn">FIRE</div>
+    </div>
 
-        <!-- Action Attack Button Right Side -->
-        <div class="col-span-1 flex flex-col justify-center h-full">
-            <button id="btnShoot" class="touch-btn bg-red-600 active:bg-red-700 text-white font-extrabold py-8 rounded-xl border border-red-500 shadow-xl text-xl flex items-center justify-center gap-1">
-                🔥 <span>PIGA</span>
-            </button>
-        </div>
-    </footer>
+    <div id="game-over">
+        <h1>GAME OVER</h1>
+        <p>Final Score: <span id="final-score">0</span></p>
+        <button id="restart-btn" onclick="resetGame()">PLAY AGAIN</button>
+    </div>
+</div>
 
-    <script>
-        // Game Canvas & Context Setup
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('game-container');
 
-        // Internal logical resolution
-        canvas.width = 800;
-        canvas.height = 450;
+function resizeCanvas() {
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
-        // Game State Variables
-        let score = 0;
-        let level = 1;
-        let gameOver = false;
+let score = 0;
+let gameOver = false;
+let propAngle = 0;
 
-        // Player Jet Object
-        const jet = {
-            x: 100,
-            y: canvas.height / 2 - 20,
-            width: 40,
-            height: 25,
-            speed: 6,
-            dx: 0,
-            dy: 0
-        };
+const player = {
+    x: canvas.width / 2 - 25,
+    y: canvas.height - 120,
+    width: 50,
+    height: 50,
+    speed: 5,
+    hp: 100,
+    dx: 0,
+    dy: 0
+};
 
-        // Key press tracking (Keyboards & Touch)
-        const keys = {
-            ArrowUp: false,
-            ArrowDown: false,
-            ArrowLeft: false,
-            ArrowRight: false,
-            Space: false
-        };
+let bullets = [];
+let enemyBullets = [];
+let enemies = [];
+let clouds = [];
 
-        // Entities Arrays
-        let bullets = [];
-        let obstacles = [];
-        let particles = [];
+for (let i = 0; i < 5; i++) {
+    clouds.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        speed: 0.5 + Math.random() * 0.8,
+        radius: 30 + Math.random() * 20
+    });
+}
 
-        // Timers & Intervals
-        let obstacleSpawnTimer = 0;
-        let lastShootTime = 0;
+const keys = {};
+window.addEventListener('keydown', e => {
+    keys[e.key] = true;
+    if (e.key === ' ' || e.key === 'f') shoot();
+});
+window.addEventListener('keyup', e => keys[e.key] = false);
 
-        // Keyboard Controllers
-        window.addEventListener('keydown', (e) => {
-            if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.ArrowUp = true;
-            if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.ArrowDown = true;
-            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.ArrowLeft = true;
-            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.ArrowRight = true;
-            if (e.code === 'Space') {
-                if (!keys.Space) shootBullet();
-                keys.Space = true;
+function bindTouch(id, dx, dy) {
+    const btn = document.getElementById(id);
+    const start = (e) => { e.preventDefault(); player.dx = dx * player.speed; player.dy = dy * player.speed; };
+    const end = (e) => { e.preventDefault(); player.dx = 0; player.dy = 0; };
+    btn.addEventListener('touchstart', start);
+    btn.addEventListener('touchend', end);
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('mouseup', end);
+}
+bindTouch('btn-up', 0, -1);
+bindTouch('btn-down', 0, 1);
+bindTouch('btn-left', -1, 0);
+bindTouch('btn-right', 1, 0);
+
+const fireBtn = document.getElementById('fire-btn');
+fireBtn.addEventListener('touchstart', (e) => { e.preventDefault(); shoot(); });
+fireBtn.addEventListener('mousedown', (e) => { e.preventDefault(); shoot(); });
+
+function shoot() {
+    if (gameOver) return;
+    bullets.push({
+        x: player.x + player.width / 2 - 3,
+        y: player.y,
+        width: 6,
+        height: 14,
+        speed: 8
+    });
+}
+
+function spawnEnemy() {
+    if (gameOver) return;
+    enemies.push({
+        x: Math.random() * (canvas.width - 40),
+        y: -50,
+        width: 44,
+        height: 44,
+        speed: 1.5 + Math.random() * 2,
+        lastShoot: Date.now(),
+        shootInterval: 1500 + Math.random() * 2000
+    });
+}
+setInterval(spawnEnemy, 1800);
+
+function drawAviatorPlane(x, y, w, h) {
+    ctx.save();
+    ctx.translate(x + w / 2, y + h / 2);
+
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(-w / 2, -h / 6, w, h / 5);
+
+    ctx.fillStyle = '#b91c1c';
+    ctx.beginPath();
+    ctx.moveTo(0, -h / 2);
+    ctx.lineTo(w / 4, h / 3);
+    ctx.lineTo(0, h / 2);
+    ctx.lineTo(-w / 4, h / 3);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#991b1b';
+    ctx.fillRect(-w / 4, h / 3, w / 2, h / 8);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(0, -h / 8, w / 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(0, -h / 2, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    propAngle += 0.4;
+    ctx.save();
+    ctx.translate(0, -h / 2);
+    ctx.rotate(propAngle);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.fillRect(-w / 3, -2, (w * 2) / 3, 4);
+    ctx.restore();
+
+    ctx.restore();
+}
+
+function drawEnemyPlane(enemy) {
+    ctx.save();
+    ctx.translate(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+
+    ctx.fillStyle = '#475569';
+    ctx.beginPath();
+    ctx.moveTo(0, enemy.height / 2);
+    ctx.lineTo(enemy.width / 2, -enemy.height / 4);
+    ctx.lineTo(-enemy.width / 2, -enemy.height / 4);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-enemy.width / 6, -enemy.height / 2, enemy.width / 3, enemy.height);
+
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(-enemy.width / 8, -enemy.height / 2 - 3, enemy.width / 4, 3);
+
+    ctx.restore();
+}
+
+function drawCloud(c) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+    ctx.arc(c.x + c.radius * 0.6, c.y - c.radius * 0.2, c.radius * 0.7, 0, Math.PI * 2);
+    ctx.arc(c.x - c.radius * 0.6, c.y - c.radius * 0.2, c.radius * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function update() {
+    if (gameOver) return;
+
+    if (keys['ArrowUp'] || keys['w']) player.y -= player.speed;
+    if (keys['ArrowDown'] || keys['s']) player.y += player.speed;
+    if (keys['ArrowLeft'] || keys['a']) player.x -= player.speed;
+    if (keys['ArrowRight'] || keys['d']) player.x += player.speed;
+
+    player.x += player.dx;
+    player.y += player.dy;
+
+    player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+    player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+
+    clouds.forEach(c => {
+        c.y += c.speed;
+        if (c.y - c.radius > canvas.height) {
+            c.y = -c.radius * 2;
+            c.x = Math.random() * canvas.width;
+        }
+    });
+
+    bullets.forEach((b, index) => {
+        b.y -= b.speed;
+        if (b.y < -20) bullets.splice(index, 1);
+    });
+
+    enemies.forEach((e, eIndex) => {
+        e.y += e.speed;
+
+        if (Date.now() - e.lastShoot > e.shootInterval) {
+            enemyBullets.push({
+                x: e.x + e.width / 2 - 3,
+                y: e.y + e.height,
+                width: 6,
+                height: 12,
+                speed: 5
+            });
+            e.lastShoot = Date.now();
+        }
+
+        bullets.forEach((b, bIndex) => {
+            if (b.x < e.x + e.width && b.x + b.width > e.x &&
+                b.y < e.y + e.height && b.y + b.height > e.y) {
+                enemies.splice(eIndex, 1);
+                bullets.splice(bIndex, 1);
+                score += 10;
+                document.getElementById('score').innerText = score;
             }
-            if (e.code === 'KeyR' && gameOver) restartGame();
         });
 
-        window.addEventListener('keyup', (e) => {
-            if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.ArrowUp = false;
-            if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.ArrowDown = false;
-            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.ArrowLeft = false;
-            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.ArrowRight = false;
-            if (e.code === 'Space') keys.Space = false;
-        });
-
-        // Touch Control Helper Function
-        function bindTouchControl(elementId, actionKey) {
-            const btn = document.getElementById(elementId);
-            if (!btn) return;
-
-            const handleStart = (e) => {
-                e.preventDefault();
-                if (gameOver) {
-                    restartGame();
-                    return;
-                }
-                if (actionKey === 'Space') {
-                    shootBullet();
-                } else {
-                    keys[actionKey] = true;
-                }
-            };
-
-            const handleEnd = (e) => {
-                e.preventDefault();
-                if (actionKey !== 'Space') {
-                    keys[actionKey] = false;
-                }
-            };
-
-            btn.addEventListener('touchstart', handleStart, { passive: false });
-            btn.addEventListener('touchend', handleEnd, { passive: false });
-            btn.addEventListener('mousedown', handleStart);
-            btn.addEventListener('mouseup', handleEnd);
+        if (player.x < e.x + e.width && player.x + player.width > e.x &&
+            player.y < e.y + e.height && player.y + player.height > e.y) {
+            enemies.splice(eIndex, 1);
+            takeDamage(20);
         }
 
-        // Attach On-Screen Controls
-        bindTouchControl('btnUp', 'ArrowUp');
-        bindTouchControl('btnDown', 'ArrowDown');
-        bindTouchControl('btnLeft', 'ArrowLeft');
-        bindTouchControl('btnRight', 'ArrowRight');
-        bindTouchControl('btnShoot', 'Space');
+        if (e.y > canvas.height + 50) enemies.splice(eIndex, 1);
+    });
 
-        // Restart on canvas tap when game over
-        canvas.addEventListener('touchstart', (e) => {
-            if (gameOver) {
-                e.preventDefault();
-                restartGame();
-            }
-        });
+    enemyBullets.forEach((eb, ebIndex) => {
+        eb.y += eb.speed;
 
-        // Shooting Logic
-        function shootBullet() {
-            const now = Date.now();
-            if (now - lastShootTime < 150) return; // Fire rate limit
-            lastShootTime = now;
-
-            bullets.push({
-                x: jet.x + jet.width,
-                y: jet.y + jet.height / 2 - 3,
-                width: 12,
-                height: 6,
-                speed: 10
-            });
+        if (eb.x < player.x + player.width && eb.x + eb.width > player.x &&
+            eb.y < player.y + player.height && eb.y + eb.height > player.y) {
+            enemyBullets.splice(ebIndex, 1);
+            takeDamage(10);
         }
 
-        // Create Particles for Explosions
-        function createExplosion(x, y, color = '#f97316') {
-            for (let i = 0; i < 12; i++) {
-                particles.push({
-                    x: x,
-                    y: y,
-                    radius: Math.random() * 3 + 1,
-                    color: color,
-                    vx: (Math.random() - 0.5) * 6,
-                    vy: (Math.random() - 0.5) * 6,
-                    life: 20
-                });
-            }
-        }
+        if (eb.y > canvas.height + 20) enemyBullets.splice(ebIndex, 1);
+    });
 
-        // Spawn Enemy Drone/Obstacle
-        function spawnObstacle() {
-            const size = Math.random() * 20 + 20;
-            obstacles.push({
-                x: canvas.width + 30,
-                y: Math.random() * (canvas.height - size - 20) + 10,
-                width: size,
-                height: size,
-                speed: Math.random() * 2 + 3 + (level * 0.5)
-            });
-        }
+    draw();
+    requestAnimationFrame(update);
+}
 
-        // Update Game Frame
-        function update() {
-            if (gameOver) return;
+function takeDamage(amount) {
+    player.hp -= amount;
+    if (player.hp < 0) player.hp = 0;
+    document.getElementById('hp').innerText = player.hp;
 
-            // Movement handling
-            if (keys.ArrowUp && jet.y > 5) jet.y -= jet.speed;
-            if (keys.ArrowDown && jet.y < canvas.height - jet.height - 5) jet.y += jet.speed;
-            if (keys.ArrowLeft && jet.x > 5) jet.x -= jet.speed;
-            if (keys.ArrowRight && jet.x < canvas.width - jet.width - 5) jet.x += jet.speed;
+    if (player.hp <= 0) {
+        gameOver = true;
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('game-over').style.display = 'flex';
+    }
+}
 
-            // Bullets movement
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                bullets[i].x += bullets[i].speed;
-                if (bullets[i].x > canvas.width) {
-                    bullets.splice(i, 1);
-                }
-            }
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Spawn obstacles
-            obstacleSpawnTimer++;
-            if (obstacleSpawnTimer > Math.max(30, 90 - level * 5)) {
-                spawnObstacle();
-                obstacleSpawnTimer = 0;
-            }
+    clouds.forEach(drawCloud);
+    drawAviatorPlane(player.x, player.y, player.width, player.height);
 
-            // Obstacles movement & collisions
-            for (let i = obstacles.length - 1; i >= 0; i--) {
-                const obs = obstacles[i];
-                obs.x -= obs.speed;
+    ctx.fillStyle = '#38bdf8';
+    bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-                // Check collision with player jet
-                if (
-                    jet.x < obs.x + obs.width &&
-                    jet.x + jet.width > obs.x &&
-                    jet.y < obs.y + obs.height &&
-                    jet.y + jet.height > obs.y
-                ) {
-                    createExplosion(jet.x + jet.width / 2, jet.y + jet.height / 2, '#ef4444');
-                    gameOver = true;
-                }
+    enemies.forEach(drawEnemyPlane);
 
-                // Check collision with bullets
-                for (let j = bullets.length - 1; j >= 0; j--) {
-                    const b = bullets[j];
-                    if (
-                        b.x < obs.x + obs.width &&
-                        b.x + b.width > obs.x &&
-                        b.y < obs.y + obs.height &&
-                        b.y + b.height > obs.y
-                    ) {
-                        createExplosion(obs.x + obs.width / 2, obs.y + obs.height / 2);
-                        obstacles.splice(i, 1);
-                        bullets.splice(j, 1);
-                        score += 10;
+    ctx.fillStyle = '#ef4444';
+    enemyBullets.forEach(eb => ctx.fillRect(eb.x, eb.y, eb.width, eb.height));
+}
 
-                        // Level Up
-                        if (score % 50 === 0) level++;
-                        break;
-                    }
-                }
+function resetGame() {
+    score = 0;
+    player.hp = 100;
+    player.x = canvas.width / 2 - 25;
+    player.y = canvas.height - 120;
+    bullets = [];
+    enemyBullets = [];
+    enemies = [];
+    gameOver = false;
+    document.getElementById('score').innerText = '0';
+    document.getElementById('hp').innerText = '100';
+    document.getElementById('game-over').style.display = 'none';
+    update();
+}
 
-                // Remove offscreen obstacles
-                if (obs && obs.x + obs.width < 0) {
-                    obstacles.splice(i, 1);
-                }
-            }
-
-            // Particles update
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life--;
-                if (p.life <= 0) particles.splice(i, 1);
-            }
-        }
-
-        // Draw Everything
-        function draw() {
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw Stars / Background details
-            ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-            for (let i = 0; i < 20; i++) {
-                ctx.fillRect((i * 43) % canvas.width, (i * 71) % canvas.height, 2, 2);
-            }
-
-            // Draw Player Jet
-            ctx.fillStyle = "#3b82f6"; // Body
-            ctx.beginPath();
-            ctx.moveTo(jet.x, jet.y);
-            ctx.lineTo(jet.x + jet.width, jet.y + jet.height / 2);
-            ctx.lineTo(jet.x, jet.y + jet.height);
-            ctx.closePath();
-            ctx.fill();
-
-            // Cockpit
-            ctx.fillStyle = "#38bdf8";
-            ctx.fillRect(jet.x + 10, jet.y + 7, 12, 10);
-
-            // Thruster Flame
-            ctx.fillStyle = "#f97316";
-            ctx.fillRect(jet.x - 8, jet.y + 8, 8, 9);
-
-            // Draw Bullets
-            ctx.fillStyle = "#facc15";
-            bullets.forEach(b => {
-                ctx.fillRect(b.x, b.y, b.width, b.height);
-            });
-
-            // Draw Obstacles (Enemy Drones)
-            ctx.fillStyle = "#ef4444";
-            obstacles.forEach(o => {
-                ctx.fillRect(o.x, o.y, o.width, o.height);
-                ctx.fillStyle = "#991b1b";
-                ctx.fillRect(o.x + 4, o.y + 4, o.width - 8, o.height - 8);
-                ctx.fillStyle = "#ef4444";
-            });
-
-            // Draw Particles
-            particles.forEach(p => {
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // Draw HUD (Score & Level)
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 16px Arial";
-            ctx.fillText(`Score: ${score}`, 20, 30);
-            ctx.fillText(`Level: ${level}`, canvas.width - 100, 30);
-
-            // Draw Game Over Screen
-            if (gameOver) {
-                ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.fillStyle = "#ef4444";
-                ctx.font = "bold 32px Arial";
-                ctx.textAlign = "center";
-                ctx.fillText("GAME OVER!", canvas.width / 2, canvas.height / 2 - 20);
-
-                ctx.fillStyle = "#ffffff";
-                ctx.font = "18px Arial";
-                ctx.fillText(`Score Yako: ${score} | Umefika Level ${level}`, canvas.width / 2, canvas.height / 2 + 20);
-                
-                ctx.fillStyle = "#38bdf8";
-                ctx.font = "bold 16px Arial";
-                ctx.fillText("Bonyeza Hapa au 'Piga' Kuanza Tena", canvas.width / 2, canvas.height / 2 + 60);
-                
-                ctx.textAlign = "left"; // Reset alignment
-            }
-        }
-
-        // Restart Game State
-        function restartGame() {
-            score = 0;
-            level = 1;
-            obstacles = [];
-            bullets = [];
-            particles = [];
-            jet.y = canvas.height / 2 - 20;
-            jet.x = 100;
-            gameOver = false;
-        }
-
-        // Main Loop
-        function loop() {
-            update();
-            draw();
-            requestAnimationFrame(loop);
-        }
-
-        // Start game when page loads
-        window.onload = function() {
-            loop();
-        };
-    </script>
+update();
+</script>
 </body>
 </html>
