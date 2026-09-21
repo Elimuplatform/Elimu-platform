@@ -2,110 +2,198 @@
 <html lang="sw">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jet Fighter Game - Elimu Platform</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Jet Fighter - Elimu Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
             background-color: #0f172a;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
         }
-
         #gameCanvas {
-            background: linear-gradient(to bottom, #020617, #1e1b4b);
-            border: 3px solid #38bdf8;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
-            display: block;
-            margin: 15px auto;
+            background: linear-gradient(to bottom, #020617, #0f172a);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+            touch-action: none;
         }
-
-        .controls-info {
-            background: #1e293b;
-            padding: 10px;
-            border-radius: 8px;
-            display: inline-block;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-
-        .btn-back {
-            display: inline-block;
-            padding: 8px 16px;
-            background: #ef4444;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
+.touch-btn:active {
+    transform: scale(0.95);
+}
+.touch-btn {
+    transition: transform 0.05s ease;
+    touch-action: none;
+}
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-6 overflow-x-hidden">
 
-    <a href="{% url 'home' %}" class="btn-back">⬅ Rudi Home</a>
-    <h1>🚀 Ndege ya Kivita - Mapumziko Game</h1>
-    <p>Cheza game kutoka kwa SIR NYUKI kupunguza uchovu wa masomo!</p>
+    <!-- Header -->
+    <header class="w-full max-w-2xl text-center my-2">
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-blue-400">✈️ JET FIGHTER</h1>
+        <p class="text-xs md:text-sm text-slate-400">Elimu Platform Special Edition</p>
+    </header>
 
-    <!-- Canvas ya Game -->
-    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <!-- Canvas Wrapper -->
+    <main class="w-full max-w-2xl flex flex-col items-center justify-center relative flex-grow">
+        <canvas id="gameCanvas" class="w-full rounded-xl border border-slate-700 max-h-[60vh] object-contain"></canvas>
+    </main>
 
-    <div class="controls-info">
-        🎮 <strong>Jinsi ya Kucheza:</strong> 
-        Tumia Vitufe vya Arrow (<strong>Left / Right</strong>) kusogeza Ndege | Tumia <strong>SPACEBAR</strong> kupiga Risasi
-    </div>
+    <!-- On-Screen Mobile Touch Controls -->
+    <footer id="mobile-controls" class="w-full max-w-md my-3 px-2 grid grid-cols-3 gap-2 items-center">
+        <!-- Directional D-Pad Left Side -->
+        <div class="col-span-2 grid grid-cols-3 gap-1.5 text-center">
+            <div></div>
+            <button id="btnUp" class="touch-btn bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-lg border border-slate-600 shadow-lg text-lg">⬆️</button>
+            <div></div>
+            <button id="btnLeft" class="touch-btn bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-lg border border-slate-600 shadow-lg text-lg">⬅️</button>
+            <button id="btnDown" class="touch-btn bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-lg border border-slate-600 shadow-lg text-lg">⬇️</button>
+            <button id="btnRight" class="touch-btn bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-lg border border-slate-600 shadow-lg text-lg">➡️</button>
+        </div>
 
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    if (canvas) {
-        const ctx = canvas.getContext("2d");
+        <!-- Action Attack Button Right Side -->
+        <div class="col-span-1 flex flex-col justify-center h-full">
+            <button id="btnShoot" class="touch-btn bg-red-600 active:bg-red-700 text-white font-extrabold py-8 rounded-xl border border-red-500 shadow-xl text-xl flex items-center justify-center gap-1">
+                🔥 <span>PIGA</span>
+            </button>
+        </div>
+    </footer>
 
-        let jet = { x: canvas.width / 2 - 20, y: canvas.height - 45, width: 40, height: 40, speed: 6 };
-        let bullets = [];
-        let obstacles = [];
-        let particles = []; // Kwa ajili ya maripuko ya moto
+    <script>
+        // Game Canvas & Context Setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Internal logical resolution
+        canvas.width = 800;
+        canvas.height = 450;
+
+        // Game State Variables
         let score = 0;
         let level = 1;
         let gameOver = false;
-        let keys = {};
 
-        window.addEventListener("keydown", (e) => {
-            if (["Space", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+        // Player Jet Object
+        const jet = {
+            x: 100,
+            y: canvas.height / 2 - 20,
+            width: 40,
+            height: 25,
+            speed: 6,
+            dx: 0,
+            dy: 0
+        };
+
+        // Key press tracking (Keyboards & Touch)
+        const keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false,
+            Space: false
+        };
+
+        // Entities Arrays
+        let bullets = [];
+        let obstacles = [];
+        let particles = [];
+
+        // Timers & Intervals
+        let obstacleSpawnTimer = 0;
+        let lastShootTime = 0;
+
+        // Keyboard Controllers
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.ArrowUp = true;
+            if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.ArrowDown = true;
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.ArrowLeft = true;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.ArrowRight = true;
+            if (e.code === 'Space') {
+                if (!keys.Space) shootBullet();
+                keys.Space = true;
+            }
+            if (e.code === 'KeyR' && gameOver) restartGame();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.ArrowUp = false;
+            if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.ArrowDown = false;
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.ArrowLeft = false;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.ArrowRight = false;
+            if (e.code === 'Space') keys.Space = false;
+        });
+
+        // Touch Control Helper Function
+        function bindTouchControl(elementId, actionKey) {
+            const btn = document.getElementById(elementId);
+            if (!btn) return;
+
+            const handleStart = (e) => {
                 e.preventDefault();
-            }
-            keys[e.code] = true;
-            if (e.code === "Space" && !gameOver) {
-                // Risasi ya Moto
-                bullets.push({ x: jet.x + jet.width / 2 - 3, y: jet.y, width: 6, height: 14, speed: 9 });
-            }
-            if (e.code === "KeyR" && gameOver) {
+                if (gameOver) {
+                    restartGame();
+                    return;
+                }
+                if (actionKey === 'Space') {
+                    shootBullet();
+                } else {
+                    keys[actionKey] = true;
+                }
+            };
+
+            const handleEnd = (e) => {
+                e.preventDefault();
+                if (actionKey !== 'Space') {
+                    keys[actionKey] = false;
+                }
+            };
+
+            btn.addEventListener('touchstart', handleStart, { passive: false });
+            btn.addEventListener('touchend', handleEnd, { passive: false });
+            btn.addEventListener('mousedown', handleStart);
+            btn.addEventListener('mouseup', handleEnd);
+        }
+
+        // Attach On-Screen Controls
+        bindTouchControl('btnUp', 'ArrowUp');
+        bindTouchControl('btnDown', 'ArrowDown');
+        bindTouchControl('btnLeft', 'ArrowLeft');
+        bindTouchControl('btnRight', 'ArrowRight');
+        bindTouchControl('btnShoot', 'Space');
+
+        // Restart on canvas tap when game over
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameOver) {
+                e.preventDefault();
                 restartGame();
             }
         });
 
-        window.addEventListener("keyup", (e) => { keys[e.code] = false; });
+        // Shooting Logic
+        function shootBullet() {
+            const now = Date.now();
+            if (now - lastShootTime < 150) return; // Fire rate limit
+            lastShootTime = now;
 
-        // 1. Kutengeneza Vikwazo vya Parachuti (Speed Imepunguzwa)
-        function spawnObstacle() {
-            if (gameOver) return;
-            // Kasi ndogo ya kushuka (Slow falling speed)
-            let speed = 0.8 + level * 0.4; 
-            obstacles.push({ x: Math.random() * (canvas.width - 40), y: -40, width: 36, height: 36, speed: speed });
+            bullets.push({
+                x: jet.x + jet.width,
+                y: jet.y + jet.height / 2 - 3,
+                width: 12,
+                height: 6,
+                speed: 10
+            });
         }
 
-        setInterval(spawnObstacle, 1400);
-
-        // 2. Kutengeneza Kamripuko ka Moto (Explosion Effect)
-        function createExplosion(x, y) {
-            for (let i = 0; i < 15; i++) {
+        // Create Particles for Explosions
+        function createExplosion(x, y, color = '#f97316') {
+            for (let i = 0; i < 12; i++) {
                 particles.push({
                     x: x,
                     y: y,
-                    radius: Math.random() * 4 + 2,
-                    color: ["#ff4500", "#ffa500", "#ffff00", "#ff0000"][Math.floor(Math.random() * 4)],
+                    radius: Math.random() * 3 + 1,
+                    color: color,
                     vx: (Math.random() - 0.5) * 6,
                     vy: (Math.random() - 0.5) * 6,
                     life: 20
@@ -113,145 +201,197 @@
             }
         }
 
-        function update() {
-            if (gameOver) return;
-
-            if (keys["ArrowLeft"] && jet.x > 0) jet.x -= jet.speed;
-            if (keys["ArrowRight"] && jet.x < canvas.width - jet.width) jet.x += jet.speed;
-
-            // Kusogeza Risasi
-            bullets.forEach((bullet, bIndex) => {
-                bullet.y -= bullet.speed;
-                if (bullet.y < 0) bullets.splice(bIndex, 1);
-            });
-
-            // Kusogeza Parachuti
-            obstacles.forEach((obs, oIndex) => {
-                obs.y += obs.speed;
-
-                if (obs.y > canvas.height) gameOver = true;
-
-                // Risasi kugonga Parachuti
-                bullets.forEach((bullet, bIndex) => {
-                    if (bullet.x < obs.x + obs.width && bullet.x + bullet.width > obs.x &&
-                        bullet.y < obs.y + obs.height && bullet.y + bullet.height > obs.y) {
-                        
-                        // Tengeneza Mripuko wa Moto hapa
-                        createExplosion(obs.x + obs.width / 2, obs.y + obs.height / 2);
-
-                        obstacles.splice(oIndex, 1);
-                        bullets.splice(bIndex, 1);
-                        score += 10;
-
-                        if (score >= 50 && score < 120) level = 2;
-                        if (score >= 120) level = 3;
-                    }
-                });
-
-                if (jet.x < obs.x + obs.width && jet.x + jet.width > obs.x &&
-                    jet.y < obs.y + obs.height && jet.y + jet.height > obs.y) {
-                    createExplosion(jet.x + jet.width / 2, jet.y + jet.height / 2);
-                    gameOver = true;
-                }
-            });
-
-            // Update Mripuko (Particles)
-            particles.forEach((p, pIndex) => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life--;
-                if (p.life <= 0) particles.splice(pIndex, 1);
+        // Spawn Enemy Drone/Obstacle
+        function spawnObstacle() {
+            const size = Math.random() * 20 + 20;
+            obstacles.push({
+                x: canvas.width + 30,
+                y: Math.random() * (canvas.height - size - 20) + 10,
+                width: size,
+                height: size,
+                speed: Math.random() * 2 + 3 + (level * 0.5)
             });
         }
 
+        // Update Game Frame
+        function update() {
+            if (gameOver) return;
+
+            // Movement handling
+            if (keys.ArrowUp && jet.y > 5) jet.y -= jet.speed;
+            if (keys.ArrowDown && jet.y < canvas.height - jet.height - 5) jet.y += jet.speed;
+            if (keys.ArrowLeft && jet.x > 5) jet.x -= jet.speed;
+            if (keys.ArrowRight && jet.x < canvas.width - jet.width - 5) jet.x += jet.speed;
+
+            // Bullets movement
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].x += bullets[i].speed;
+                if (bullets[i].x > canvas.width) {
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Spawn obstacles
+            obstacleSpawnTimer++;
+            if (obstacleSpawnTimer > Math.max(30, 90 - level * 5)) {
+                spawnObstacle();
+                obstacleSpawnTimer = 0;
+            }
+
+            // Obstacles movement & collisions
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.x -= obs.speed;
+
+                // Check collision with player jet
+                if (
+                    jet.x < obs.x + obs.width &&
+                    jet.x + jet.width > obs.x &&
+                    jet.y < obs.y + obs.height &&
+                    jet.y + jet.height > obs.y
+                ) {
+                    createExplosion(jet.x + jet.width / 2, jet.y + jet.height / 2, '#ef4444');
+                    gameOver = true;
+                }
+
+                // Check collision with bullets
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    const b = bullets[j];
+                    if (
+                        b.x < obs.x + obs.width &&
+                        b.x + b.width > obs.x &&
+                        b.y < obs.y + obs.height &&
+                        b.y + b.height > obs.y
+                    ) {
+                        createExplosion(obs.x + obs.width / 2, obs.y + obs.height / 2);
+                        obstacles.splice(i, 1);
+                        bullets.splice(j, 1);
+                        score += 10;
+
+                        // Level Up
+                        if (score % 50 === 0) level++;
+                        break;
+                    }
+                }
+
+                // Remove offscreen obstacles
+                if (obs && obs.x + obs.width < 0) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // Particles update
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        // Draw Everything
         function draw() {
+            // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // A. Chora Ndege
-            ctx.fillStyle = "#38bdf8";
+            // Draw Stars / Background details
+            ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+            for (let i = 0; i < 20; i++) {
+                ctx.fillRect((i * 43) % canvas.width, (i * 71) % canvas.height, 2, 2);
+            }
+
+            // Draw Player Jet
+            ctx.fillStyle = "#3b82f6"; // Body
             ctx.beginPath();
-            ctx.moveTo(jet.x + jet.width / 2, jet.y);
-            ctx.lineTo(jet.x + jet.width, jet.y + jet.height);
+            ctx.moveTo(jet.x, jet.y);
+            ctx.lineTo(jet.x + jet.width, jet.y + jet.height / 2);
             ctx.lineTo(jet.x, jet.y + jet.height);
             ctx.closePath();
             ctx.fill();
 
-            // B. Chora Risasi za Moto (Fire Lasers)
-            bullets.forEach((b) => {
-                let gradient = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.height);
-                gradient.addColorStop(0, "#ffffff");
-                gradient.addColorStop(0.3, "#ffff00");
-                gradient.addColorStop(1, "#ff3300");
-                ctx.fillStyle = gradient;
+            // Cockpit
+            ctx.fillStyle = "#38bdf8";
+            ctx.fillRect(jet.x + 10, jet.y + 7, 12, 10);
+
+            // Thruster Flame
+            ctx.fillStyle = "#f97316";
+            ctx.fillRect(jet.x - 8, jet.y + 8, 8, 9);
+
+            // Draw Bullets
+            ctx.fillStyle = "#facc15";
+            bullets.forEach(b => {
                 ctx.fillRect(b.x, b.y, b.width, b.height);
             });
 
-            // C. Chora Vikwazo vya PARACHUTI
-            obstacles.forEach((o) => {
-                // Dome la Parachuti
-                ctx.fillStyle = level === 1 ? "#ef4444" : level === 2 ? "#f97316" : "#a855f7";
-                ctx.beginPath();
-                ctx.arc(o.x + o.width / 2, o.y + 12, 16, Math.PI, 0, false);
-                ctx.closePath();
-                ctx.fill();
-
-                // Kamba za Parachuti
-                ctx.strokeStyle = "#cbd5e1";
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(o.x + 2, o.y + 12);
-                ctx.lineTo(o.x + o.width / 2, o.y + o.height);
-                ctx.moveTo(o.x + o.width - 2, o.y + 12);
-                ctx.lineTo(o.x + o.width / 2, o.y + o.height);
-                ctx.stroke();
-
-                // Mzigo chini ya Parachuti
-                ctx.fillStyle = "#64748b";
-                ctx.fillRect(o.x + o.width / 2 - 4, o.y + o.height - 4, 8, 8);
+            // Draw Obstacles (Enemy Drones)
+            ctx.fillStyle = "#ef4444";
+            obstacles.forEach(o => {
+                ctx.fillRect(o.x, o.y, o.width, o.height);
+                ctx.fillStyle = "#991b1b";
+                ctx.fillRect(o.x + 4, o.y + 4, o.width - 8, o.height - 8);
+                ctx.fillStyle = "#ef4444";
             });
 
-            // D. Chora Kamripuko ka Moto (Particles)
-            particles.forEach((p) => {
+            // Draw Particles
+            particles.forEach(p => {
                 ctx.fillStyle = p.color;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
                 ctx.fill();
             });
 
-            // E. Score na Level
+            // Draw HUD (Score & Level)
             ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 14px Arial";
-            ctx.fillText(`Score: ${score}`, 15, 25);
-            ctx.fillText(`LEVEL: ${level}`, canvas.width - 90, 25);
+            ctx.font = "bold 16px Arial";
+            ctx.fillText(`Score: ${score}`, 20, 30);
+            ctx.fillText(`Level: ${level}`, canvas.width - 100, 30);
 
-            // F. Game Over Screen
+            // Draw Game Over Screen
             if (gameOver) {
-                ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+                ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 ctx.fillStyle = "#ef4444";
-                ctx.font = "26px Arial";
+                ctx.font = "bold 32px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText("GAME OVER!", canvas.width / 2, canvas.height / 2 - 10);
+                ctx.fillText("GAME OVER!", canvas.width / 2, canvas.height / 2 - 20);
 
                 ctx.fillStyle = "#ffffff";
-                ctx.font = "15px Arial";
+                ctx.font = "18px Arial";
                 ctx.fillText(`Score Yako: ${score} | Umefika Level ${level}`, canvas.width / 2, canvas.height / 2 + 20);
-                ctx.fillText("Bonyeza 'R' Kuanza Tena", canvas.width / 2, canvas.height / 2 + 50);
-                ctx.textAlign = "left";
+                
+                ctx.fillStyle = "#38bdf8";
+                ctx.font = "bold 16px Arial";
+                ctx.fillText("Bonyeza Hapa au 'Piga' Kuanza Tena", canvas.width / 2, canvas.height / 2 + 60);
+                
+                ctx.textAlign = "left"; // Reset alignment
             }
         }
 
+        // Restart Game State
         function restartGame() {
-            score = 0; level = 1; obstacles = []; bullets = []; particles = []; gameOver = false;
-            jet.x = canvas.width / 2 - 20;
+            score = 0;
+            level = 1;
+            obstacles = [];
+            bullets = [];
+            particles = [];
+            jet.y = canvas.height / 2 - 20;
+            jet.x = 100;
+            gameOver = false;
         }
 
+        // Main Loop
         function loop() {
-            update(); draw(); requestAnimationFrame(loop);
+            update();
+            draw();
+            requestAnimationFrame(loop);
         }
-        loop();
-    }
-</script>
+
+        // Start game when page loads
+        window.onload = function() {
+            loop();
+        };
+    </script>
 </body>
 </html>
