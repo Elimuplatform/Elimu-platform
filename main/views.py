@@ -90,8 +90,7 @@ from django.http import JsonResponse
 import os
 
 # Weka API Key yako hapa au kwenye envirAQ.Ab8RN6Lmq_jrfbNRbciVGlNywcX6o9LnyjNl_CJE9xPtsi9Oqgonment variable
-GEMINI_API_KEY = "AQ.Ab8RN6Lmq_jrfbNRbciVGlNywcX6o9LnyjNl_CJE9xPtsi9Oqg"
-
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 @login_required(login_url='login')
 def ai_tutor(request):
     if request.method == 'POST':
