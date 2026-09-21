@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aviator Jet Fighter Game</title>
+    <title>Aviator Jet Fighter - Sir Nyuki</title>
     <style>
         * {
             box-sizing: border-box;
@@ -131,6 +131,29 @@
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
         }
+        /* Popup Congratulation Banner */
+        #congrat-popup {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(0, 0, 0, 0.85);
+            border: 3px solid #f1c40f;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            color: #f1c40f;
+            font-size: 20px;
+            font-weight: bold;
+            z-index: 15;
+            transition: transform 0.3s ease-in-out;
+            pointer-events: none;
+            box-shadow: 0 0 25px rgba(241, 196, 15, 0.8);
+            width: 85%;
+        }
+        #congrat-popup.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
     </style>
 </head>
 <body>
@@ -142,6 +165,10 @@
     </div>
 
     <canvas id="gameCanvas"></canvas>
+
+    <div id="congrat-popup">
+        🎉 CONGRATULATION FROM SIR NYUKI! 🎉
+    </div>
 
     <div id="touch-controls">
         <div class="dpad">
@@ -174,7 +201,49 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
+// Web Audio API for Sound Effects
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(type) {
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'shoot') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    } else if (type === 'explosion') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.25);
+    } else if (type === 'congrat') {
+        const now = audioCtx.currentTime;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.setValueAtTime(600, now + 0.1);
+        osc.frequency.setValueAtTime(800, now + 0.2);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+        osc.start(now);
+        osc.stop(now + 0.4);
+    }
+}
+
 let score = 0;
+let lastMilestone = 0;
 let gameOver = false;
 let propAngle = 0;
 
@@ -193,6 +262,7 @@ let bullets = [];
 let enemyBullets = [];
 let enemies = [];
 let clouds = [];
+let particles = [];
 
 for (let i = 0; i < 5; i++) {
     clouds.push({
@@ -237,6 +307,7 @@ function shoot() {
         height: 14,
         speed: 8
     });
+    playSound('shoot');
 }
 
 function spawnEnemy() {
@@ -252,6 +323,42 @@ function spawnEnemy() {
     });
 }
 setInterval(spawnEnemy, 1800);
+
+function triggerCelebration() {
+    playSound('congrat');
+    const popup = document.getElementById('congrat-popup');
+    popup.classList.add('show');
+    setTimeout(() => {
+        popup.classList.remove('show');
+    }, 2500);
+
+    for (let i = 0; i < 60; i++) {
+        particles.push({
+            x: canvas.width / 2,
+            y: canvas.height / 3,
+            vx: (Math.random() - 0.5) * 8,
+            vy: (Math.random() - 0.5) * 8,
+            color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+            radius: 4 + Math.random() * 4,
+            alpha: 1,
+            life: 60
+        });
+    }
+}
+
+function drawBackgroundText() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.font = 'bold 22px Arial';
+    ctx.textAlign = 'center';
+
+    let text = "REFRESH MIND WITH SIR NYUKI";
+    let spacing = 120;
+    for (let y = 50; y < canvas.height + 100; y += spacing) {
+        ctx.fillText(text, canvas.width / 2, y);
+    }
+    ctx.restore();
+}
 
 function drawAviatorPlane(x, y, w, h) {
     ctx.save();
@@ -371,6 +478,12 @@ function update() {
                 bullets.splice(bIndex, 1);
                 score += 10;
                 document.getElementById('score').innerText = score;
+                playSound('explosion');
+
+                if (score > 0 && score % 50 === 0 && score !== lastMilestone) {
+                    lastMilestone = score;
+                    triggerCelebration();
+                }
             }
         });
 
@@ -378,6 +491,7 @@ function update() {
             player.y < e.y + e.height && player.y + player.height > e.y) {
             enemies.splice(eIndex, 1);
             takeDamage(20);
+            playSound('explosion');
         }
 
         if (e.y > canvas.height + 50) enemies.splice(eIndex, 1);
@@ -390,9 +504,18 @@ function update() {
             eb.y < player.y + player.height && eb.y + eb.height > player.y) {
             enemyBullets.splice(ebIndex, 1);
             takeDamage(10);
+            playSound('explosion');
         }
 
         if (eb.y > canvas.height + 20) enemyBullets.splice(ebIndex, 1);
+    });
+
+    particles.forEach((p, index) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        p.alpha = p.life / 60;
+        if (p.life <= 0) particles.splice(index, 1);
     });
 
     draw();
@@ -414,6 +537,7 @@ function takeDamage(amount) {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    drawBackgroundText();
     clouds.forEach(drawCloud);
     drawAviatorPlane(player.x, player.y, player.width, player.height);
 
@@ -424,16 +548,28 @@ function draw() {
 
     ctx.fillStyle = '#ef4444';
     enemyBullets.forEach(eb => ctx.fillRect(eb.x, eb.y, eb.width, eb.height));
+
+    particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
 }
 
 function resetGame() {
     score = 0;
+    lastMilestone = 0;
     player.hp = 100;
     player.x = canvas.width / 2 - 25;
     player.y = canvas.height - 120;
     bullets = [];
     enemyBullets = [];
     enemies = [];
+    particles = [];
     gameOver = false;
     document.getElementById('score').innerText = '0';
     document.getElementById('hp').innerText = '100';
