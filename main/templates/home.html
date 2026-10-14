@@ -1,251 +1,185 @@
-<!DOCTYPE html>
-<html lang="sw">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elimu Platform</title>
+{% extends 'base.html' %}
 
-    <!-- Hakikisha kodi zote za CSS zipo ndani ya tag hii ya style -->
-    <style>
-        :root {
-            --bg-color: #f4f6f9;
-            --text-color: #212529;
-            --card-bg: #ffffff;
-        }
+{% block title %}Nyumbani - Elimu Platform{% endblock %}
 
-        body.dark-mode {
-            --bg-color: #121212;
-            --text-color: #e0e0e0;
-            --card-bg: #1e1e1e;
-        }
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
 
-        body { 
-            font-family: Arial, sans-serif; 
-            background-color: var(--bg-color); 
-            color: var(--text-color);
-            margin: 0; 
-            padding: 20px; 
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .container { max-width: 800px; margin: 0 auto; }
-        
-        .card, .chat-box { 
-            background: var(--card-bg) !important; 
-            padding: 20px; 
-            border-radius: 10px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            margin-bottom: 20px; 
-            text-align: left; 
-        }
-
-        .header { 
-            background: #0056b3; 
-            color: white; 
-            padding: 20px; 
-            border-radius: 10px; 
-            margin-bottom: 20px; 
-        }
-
-        .alert { padding: 10px; background: #d4edda; color: #155724; border-radius: 5px; margin-bottom: 15px; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-
-    <!-- Headeryenye Kichwa Kikubwa cha Website -->
-    <div class="header">
-        <!-- Kichwa Kikubwa cha Website -->
-        <h1 style="margin: 0 0 15px 0; font-size: 32px; text-align: center; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
-            ELIMU PLATFORM
-        </h1>
-        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin-bottom: 15px;">
-
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <div style="text-align: left;">
-                <h3 style="margin: 0; font-size: 18px;">Karibu, {{ request.user.username }}!</h3>
-                <p style="margin: 5px 0 0 0; font-size: 13px; opacity: 0.9;">Jifunze na pakua study materials kwa urahisi</p>
-                <a href="/admin/" style="color: white; text-decoration: underline; font-size: 12px; font-weight: bold;">Ingia Admin Panel</a>
-            </div>
-
-            <!-- Vitufe vya Night Mode, Color Picker, Profile & Logout -->
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <button id="themeToggleBtn" onclick="toggleTheme()" style="padding: 6px 12px; border-radius: 5px; border: 1px solid white; background: transparent; color: white; cursor: pointer; font-size: 12px;">
-                    🌙 Night Mode
-                </button>
-                
-                <label style="font-size: 12px;">Rangi:</label>
-                <input type="color" id="colorPicker" onchange="changeBgColor(this.value)" value="#f4f6f9" style="width: 28px; height: 28px; border: none; cursor: pointer; background: transparent;">
-
-                {% if user_profile.passport_photo %}
-                    <img src="{{ user_profile.passport_photo.url }}" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover;">
-                {% endif %}
-                
-                <a href="{% url 'logout' %}" style="background: #dc3545; color: white; padding: 6px 12px; border-radius: 5px; text-decoration: none; font-size: 13px;">Toka (Logout)</a>
-            </div>
-        </div>
-    </div>
-
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-
-        <!-- SEHEMU YA FOUNDER -->
-        <div class="card">
-            <h2>Taarifa za Founder</h2>
-            {% for founder in founders %}
-                <h3 style="color: #0056b3; margin-bottom: 5px;">{{ founder.name }}</h3>
-                <p style="line-height: 1.6;"><strong>Bio:</strong> {{ founder.bio }}</p>
-                
-                <div style="margin-top: 10px; background: #e9ecef; padding: 10px; border-radius: 5px;">
-                    <strong>Mawasiliano:</strong><br>
-                    {% if founder.phone %} 📞 Simu: {{ founder.phone }}<br>{% endif %}
-                    {% if founder.email %} ✉️ Email: {{ founder.email }}<br>{% endif %}
-                </div>
-
-                <h4 style="margin-top: 15px;">Picha za Founder:</h4>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
-                    {% if founder.image1 %}<img src="{{ founder.image1.url }}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 2px solid #0056b3;">{% endif %}
-                    {% if founder.image2 %}<img src="{{ founder.image2.url }}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 2px solid #0056b3;">{% endif %}
-                    {% if founder.image3 %}<img src="{{ founder.image3.url }}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 2px solid #0056b3;">{% endif %}
-                </div>
-            {% empty %}
-                <p>Taarifa za founder bado hazijawekwa.</p>
-            {% endfor %}
-        </div>
-
-        <!-- SEHEMU YA NOTISI -->
-        <div class="card">
-            <h2>Notisi na Study Materials</h2>
-            {% for notice in notices %}
-                <div style="border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 10px;">
-                    <h3>{{ notice.title }}</h3>
-                    <p>Aina: {{ notice.category }}</p>
-                    {% if notice.pdf_file %}
-                        <a href="{{ notice.pdf_file.url }}" download style="color: #0056b3; font-weight: bold;">Pakua PDF</a>
-                    {% endif %}
-                </div>
-            {% empty %}
-                <p>Hakuna notisi zilizowekwa kwa sasa.</p>
-            {% endfor %}
-        </div>
-        <!-- SEHEMU YA AI TUTOR -->
-        <div class="card" style="border: 2px solid #0056b3;">
-            <h2 style="color: #0056b3;">🤖 AI Student Tutor (Mwalimu Msaidizi)</h2>
-            <p style="font-size: 14px; color: #555;">Una swali kuhusiana na notisi ulizopakua? Uliza hapa ujibiwe mara moja!</p>
+    <!-- Hero / Welcome Banner -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between">
+        <div class="space-y-3 md:w-2/3">
+            <span class="bg-indigo-500/50 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-400">Karibu Sana</span>
+            <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight">Karibu, {{ request.user.username }}!</h1>
+            <p class="text-indigo-100 text-sm sm:text-base">Jifunze na pakua study materials kwa urahisi, tumia AI Tutor kupata majibu ya maswali yako.</p>
             
-            <div id="chat-box" style="height: 250px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background: #fafafa; margin-bottom: 10px;">
-                <p><strong>Sir Nyuki:</strong> Karibu! Ninaweza kukusaidia vipi kwenye masomo yako leo?</p>
+            <div class="pt-2 flex flex-wrap gap-3">
+                <a href="{% url 'jet_game' %}" class="bg-yellow-400 text-indigo-950 font-bold px-4 py-2 rounded-xl text-sm shadow hover:bg-yellow-300 transition duration-200">
+                    <i class="fa-solid fa-gamepad mr-1"></i> Cheza Game 🎮
+                </a>
+                {% if request.user.is_staff %}
+                <a href="/admin/" class="bg-white/20 hover:bg-white/30 text-white font-semibold px-4 py-2 rounded-xl text-sm border border-white/30 transition duration-200">
+                    Admin Panel
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- User Profile Photo kama ipo -->
+        {% if user_profile.passport_photo %}
+        <div class="mt-6 md:mt-0">
+            <img src="{{ user_profile.passport_photo.url }}" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white/80 object-cover shadow-lg">
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Messages kama zipo -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="bg-emerald-100 border border-emerald-400 text-emerald-800 px-4 py-3 rounded-2xl text-sm font-medium">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Grid Kuu: Notisi & AI Tutor -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- SEHEMU YA NOTISI NA MATERIALS -->
+        <div class="bg-white p-6 rounded-3xl shadow-md border border-slate-100 space-y-6">
+            <h2 class="text-xl font-bold text-slate-800 flex items-center">
+                <i class="fa-solid fa-book-open text-indigo-600 mr-2"></i> Notisi na Study Materials
+            </h2>
+            
+            <div class="space-y-4 max-h-[350px] overflow-y-auto pr-2">
+                {% for notice in notices %}
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-indigo-200 transition">
+                        <h3 class="font-bold text-slate-800">{{ notice.title }}</h3>
+                        <p class="text-xs text-slate-500 mb-2">Aina: {{ notice.category }}</p>
+                        {% if notice.pdf_file %}
+                            <a href="{{ notice.pdf_file.url }}" download class="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                                <i class="fa-solid fa-download mr-1"></i> Pakua PDF
+                            </a>
+                        {% endif %}
+                    </div>
+                {% empty %}
+                    <p class="text-slate-500 text-sm">Hakuna notisi zilizowekwa kwa sasa.</p>
+                {% endfor %}
             </div>
 
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="user-input" placeholder="Andika swali lako hapa..." style="margin-top: 0;">
-                <button onclick="askAI()" style="width: 120px; margin-top: 0;">Uliza</button>
+            <!-- SEHEMU YA FOUNDER -->
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="text-lg font-bold text-slate-800 mb-3 flex items-center">
+                    <i class="fa-solid fa-user-shield text-indigo-600 mr-2"></i> Taarifa za Founder
+                </h3>
+                {% for founder in founders %}
+                    <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 space-y-2">
+                        <h4 class="font-bold text-indigo-900">{{ founder.name }}</h4>
+                        <p class="text-xs text-slate-600 leading-relaxed"><strong>Bio:</strong> {{ founder.bio }}</p>
+                        
+                        <div class="text-xs text-slate-600 pt-1">
+                            {% if founder.phone %} 📞 <span>{{ founder.phone }}</span><br>{% endif %}
+                            {% if founder.email %} ✉️ <span>{{ founder.email }}</span>{% endif %}
+                        </div>
+
+                        <!-- Picha za Founder -->
+                        <div class="flex gap-2 pt-2 flex-wrap">
+                            {% if founder.image1 %}<img src="{{ founder.image1.url }}" class="w-14 h-14 object-cover rounded-xl border border-indigo-200 shadow-sm">{% endif %}
+                            {% if founder.image2 %}<img src="{{ founder.image2.url }}" class="w-14 h-14 object-cover rounded-xl border border-indigo-200 shadow-sm">{% endif %}
+                            {% if founder.image3 %}<img src="{{ founder.image3.url }}" class="w-14 h-14 object-cover rounded-xl border border-indigo-200 shadow-sm">{% endif %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-slate-500 text-xs">Taarifa za founder bado hazijawekwa.</p>
+                {% endfor %}
             </div>
         </div>
 
-        <script>
-            function askAI() {
-                var inputField = document.getElementById('user-input');
-                var chatBox = document.getElementById('chat-box');
-                var message = inputField.value.trim();
+        <!-- SEHEMU YA AI TUTOR & KUJIANDIKISHA -->
+        <div class="space-y-8">
+            <!-- AI TUTOR CHAT CARD -->
+            <div class="bg-white p-6 rounded-3xl shadow-md border border-slate-100 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 mb-1 flex items-center">
+                        <i class="fa-solid fa-robot text-purple-600 mr-2"></i> AI Student Tutor
+                    </h2>
+                    <p class="text-xs text-slate-500 mb-4">Uliza swali lolote la masomo yako na ujibiwe papo hapo na Sir Nyuki!</p>
+                    
+                    <!-- Chat Box -->
+                    <div id="chat-box" class="h-56 overflow-y-auto border border-slate-200 p-4 rounded-2xl bg-slate-50 mb-4 text-sm space-y-3">
+                        <p><strong>Sir Nyuki:</strong> Karibu! Ninaweza kukusaidia vipi kwenye masomo yako leo?</p>
+                    </div>
+                </div>
 
-                if (message === '') return;
+                <div class="flex gap-2">
+                    <input type="text" id="user-input" placeholder="Andika swali lako hapa..." class="flex-grow px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-600 bg-slate-50">
+                    <button onclick="askAI()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm shadow transition">
+                        Uliza
+                    </button>
+                </div>
+            </div>
 
-                // Onyesha swali la mwanafunzi
-                chatBox.innerHTML += '<p><strong>You:</strong> ' + message + '</p>';
-                inputField.value = '';
-                chatBox.scrollTop = chatBox.scrollHeight;
+            <!-- SEHEMU YA KUJISAJILI (KAMA MTUMIAJI MPYA) -->
+            <div class="bg-white p-6 rounded-3xl shadow-md border border-slate-100">
+                <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                    <i class="fa-solid fa-user-plus text-emerald-600 mr-2"></i> Sajili Akaunti Mpya
+                </h2>
+                <form method="POST" enctype="multipart/form-data" class="space-y-3">
+                    {% csrf_token %}
+                    <input type="text" name="username" placeholder="Username" required class="w-full px-4 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:border-indigo-600">
+                    <input type="email" name="email" placeholder="Barua Pepe (Email)" required class="w-full px-4 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:border-indigo-600">
+                    <input type="text" name="phone" placeholder="Namba ya Simu" required class="w-full px-4 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:border-indigo-600">
+                    
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-slate-600">Picha ya Passport:</label>
+                        <input type="file" name="passport_photo" accept="image/*" required class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    </div>
 
-                // Tuma kwenda kwa Server/Django
-                var formData = new FormData();
-                formData.append('message', message);
-                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                    <input type="password" name="password" placeholder="Nenosiri (Password)" required class="w-full px-4 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:border-indigo-600">
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-sm shadow transition">
+                        Tengeneza Akaunti
+                    </button>
+                </form>
+            </div>
+        </div>
 
-                fetch('/ai-tutor/', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.reply) {
-                        // Badilisha ili itumie Sir Nyuki na ikubali HTML tags (rangi na mistari)
-chatBox.innerHTML += `
-    <div style="margin-bottom: 20px;">
-        <strong style="color: #2b3a4a;">Sir Nyuki:</strong><br>
-        ${data.reply.replace(/\n/g, '<br>')}
     </div>
-`;
-                    } else if (data.error) {
-                        chatBox.innerHTML += '<p style="color: red;"><strong>System:</strong> ' + data.error + '</p>';
-                    }
-                    chatBox.scrollTop = chatBox.scrollHeight;
-                });
+</div>
+
+<!-- JavaScript ya AI Tutor -->
+<script>
+    function askAI() {
+        var inputField = document.getElementById('user-input');
+        var chatBox = document.getElementById('chat-box');
+        var message = inputField.value.trim();
+
+        if (message === '') return;
+
+        chatBox.innerHTML += '<div class="text-right"><span class="inline-block bg-indigo-100 text-indigo-900 px-3 py-1.5 rounded-2xl text-xs"><strong>Wewe:</strong> ' + message + '</span></div>';
+        inputField.value = '';
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        var formData = new FormData();
+        formData.append('message', message);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch('/ai-tutor/', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.reply) {
+                chatBox.innerHTML += `
+                    <div class="bg-white p-3 rounded-2xl border border-slate-200 text-xs shadow-sm">
+                        <strong class="text-indigo-600">Sir Nyuki:</strong><br>
+                        <div class="mt-1">${data.reply.replace(/\n/g, '<br>')}</div>
+                    </div>
+                `;
+            } else if (data.error) {
+                chatBox.innerHTML += '<div class="text-xs text-red-500"><strong>System:</strong> ' + data.error + '</div>';
             }
-        </script>
-
-        <!-- SEHEMU YA USERS KUJISAJILI -->
-        <div class="card">
-            <h2>Jisajili Kama Mwanafunzi / Mtumiaji Mpya</h2>
-            <form method="POST" enctype="multipart/form-data">
-                {% csrf_token %}
-                <input type="text" name="username" placeholder="Jina la Mtumiaji (Username)" required>
-                <input type="email" name="email" placeholder="Barua Pepe (Email)" required>
-                <input type="text" name="phone" placeholder="Namba ya Simu" required>
-                
-                <label style="display: block; text-align: left; margin-top: 10px; font-weight: bold; color: #555;">
-                    Pakia Picha ya Passport:
-                </label>
-                <input type="file" name="passport_photo" accept="image/*" required style="border: 1px dashed #0056b3; background: #f0f4f8;">
-
-                <input type="password" name="password" placeholder="Nenosiri (Password)" required>
-                <button type="submit">Tengeneza Akaunti</button>
-            </form>
-        </div>
-    </div>
-    <script>
-  // 1. Kazi ya Day / Night Mode
-  function toggleTheme() {
-    const body = document.body;
-    const btn = document.getElementById('themeToggleBtn');
-    
-    body.classList.toggle('dark-mode');
-    
-    if (body.classList.contains('dark-mode')) {
-      btn.innerText = '☀️ Day Mode';
-      localStorage.setItem('theme', 'dark');
-    } else {
-      btn.innerText = '🌙 Night Mode';
-      localStorage.setItem('theme', 'light');
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
     }
-  }
-
-  // 2. Kazi ya Kubadilisha Background Color Maalum
-  function changeBgColor(color) {
-    document.body.style.backgroundColor = color;
-    localStorage.setItem('customBgColor', color);
-  }
-
-  // 3. Kupakia chaguo la mtumiaji pindi ukurasa unapofunguka (Auto Load)
-  window.onload = function() {
-    const savedTheme = localStorage.getItem('theme');
-    const savedColor = localStorage.getItem('customBgColor');
-    const btn = document.getElementById('themeToggleBtn');
-
-    if (savedTheme === 'dark') {
-      document.body.classList.add('dark-mode');
-      if(btn) btn.innerText = '☀️ Day Mode';
-    } else if (savedColor) {
-      document.body.style.backgroundColor = savedColor;
-      document.getElementById('colorPicker').value = savedColor;
-    }
-  };
 </script>
-</body>
-</html>
-<a href="{% url 'jet_game' %}" style="background: #8b5cf6; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-right: 10px;">
-    🎮 Cheza Game
-</a>
+{% endblock %}
